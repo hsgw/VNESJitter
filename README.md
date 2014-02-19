@@ -11,7 +11,7 @@ vNES
 vNESp5
 	http://github.com/mcanet/vNESp5/
 
-**THIS CODE CONTAINS LOT OF BUGS**
+**THIS CODE CONTAIN A LOT OF BUGS**
 
 License
 -------------------------------------
@@ -29,5 +29,6 @@ this program.  If not, see <http://www.gnu.org/licenses/>.
 
 TODO
 -------------------------------------
-- direct memory access
+- sound
+- direct memory access(cheats)
 - state save and load
