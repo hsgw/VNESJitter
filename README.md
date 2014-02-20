@@ -29,6 +29,9 @@ this program.  If not, see <http://www.gnu.org/licenses/>.
 
 TODO
 -------------------------------------
-- sound
 - direct memory access(cheats)
 - state save and load
+
+MEMO
+-------------------------------------
+Sound output is not in Max but OS default sound port.
