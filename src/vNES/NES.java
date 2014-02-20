@@ -72,7 +72,7 @@ public class NES {
         ppu.init();
 
         // Enable sound:
-        enableSound(true);
+        enableSound(false);
 
         // Clear CPU memory:
         clearCPUMemory();

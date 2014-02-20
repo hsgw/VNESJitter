@@ -26,7 +26,7 @@ public class vNES extends Applet implements Runnable {
 
     boolean scale;
     boolean scanlines;
-    boolean sound;
+    boolean sound = false;
     boolean fps;
     boolean stereo;
     boolean timeemulation;

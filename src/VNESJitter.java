@@ -34,10 +34,13 @@
 **************************************************************************************/
 
 
+import static vNESJitter.Constants.*;
+
 import java.awt.image.BufferedImage;
 
 import vNES.KbInputHandler;
 import vNES.vNES;
+import vNESJitter.Constants.Command;
 
 import com.cycling74.jitter.JitterMatrix;
 import com.cycling74.max.Atom;
@@ -46,9 +49,7 @@ import com.cycling74.max.MaxObject;
 
 public class VNESJitter extends MaxObject{
 
-	private final int WIDTH = 256;
-	private final int HEIGHT = 240;
-	private final int DEFAULT_FRAMERATE = 60;
+	private int counter = 0;
 
 	// JitterMatrix matrix = new JitterMatrix(1, "char", WIDTH, HEIGHT);
 	JitterMatrix matrix = new JitterMatrix(1, "char", WIDTH, HEIGHT-16); // actual display size W:256 H:224
@@ -64,7 +65,7 @@ public class VNESJitter extends MaxObject{
 				DataTypes.ANYTHING, // command
 				DataTypes.LIST, 	// controller player 1
 				DataTypes.LIST, 	// controller player 2
-				DataTypes.ANYTHING	// frame update
+				DataTypes.ANYTHING, // frame update
 				});
 
 		setInletAssist(0, "(massage) command");
@@ -73,20 +74,23 @@ public class VNESJitter extends MaxObject{
 		setInletAssist(3, "(bang) update frame");
 
 		declareOutlets(new int[]{
-				DataTypes.ALL, // reserved
-				DataTypes.ALL  // jitter matrix out
+				DataTypes.ALL,  // jitter matrix out
+				DataTypes.LIST	// data
 				});
 
-		setOutletAssist(0, "reserved");
-		setOutletAssist(1, "(matrix) out");
+		setOutletAssist(0, "(matrix) out");
+		setOutletAssist(1, "(list) data out");
 
 		emu = new vNES();
 		emu.init();
-
-		// sound disable
 		emu.nes.enableSound(false);
 
 	}
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Max Object
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	// controller update
 	public void list(int[] intArray){
@@ -103,37 +107,58 @@ public class VNESJitter extends MaxObject{
 			if(emu.started){
 				matrix = updatePixels();
 			}
-			outlet(1,"jit_matrix",matrix.getName());
+			outlet(0,"jit_matrix",matrix.getName());
 		}
 	}
 
-	// for message + arg
+	// message + arg(s)
 	public void anything(String message, Atom[] atomArray){
+		Command com;
 
-		// load rom
-		if(message.equals("rom")){
-			loadRom(atomArray[0].toString());
+		try {
+			com = COMMAND_LIST.get(message);
+		} catch (Exception e) {
+			// e.printStackTrace();
+			error("wrong message!");
+			return;
+		}
 
-		// set emulation speed
-		}else if(message.equals("setSpeed")){
-			if(atomArray[0].isFloat() && atomArray[0].getFloat() > 0.0){
-				int newFramerate = Math.round(atomArray[0].getFloat() * DEFAULT_FRAMERATE);
-				if(newFramerate > 0){
-					if(!emu.nes.isRunning()) emu.nes.startEmulation();
-					emu.nes.setFramerate(newFramerate);
-				}else{
-					emu.nes.stopEmulation();
+		switch(com){
+
+			// load rom
+			case ROM :
+				loadRom(atomArray[0].toString());
+				break;
+
+			// set emulating speed
+			case SET_SPEED :
+				if(atomArray[0].isFloat() && atomArray[0].getFloat() >= 0.0){
+					int newFramerate = Math.round(atomArray[0].getFloat() * DEFAULT_FRAMERATE);
+					if(newFramerate > 0){
+						if(!emu.nes.isRunning()) emu.nes.startEmulation();
+						emu.nes.setFramerate(newFramerate);
+					}
 				}
-			}
+				break;
+
+			// enable sound output from OS default port (not in max/msp signal out)
+			case SOUND:
+				if(atomArray[0].isInt()){
+					if(atomArray[0].getInt() == 1) emu.nes.enableSound(true);
+					else if(atomArray[0].getInt() == 0) emu.nes.enableSound(false);
+				}
+				break;
+
+			default: break;
 		}
 	}
 
 	// reset game and reload rom
 	public void reset(){
-		emu.nes.reset();
 		if(fileName != null){
 			loadRom(fileName);
 		}
+		emu.nes.startEmulation();
 	}
 
 	// stop game
@@ -141,7 +166,7 @@ public class VNESJitter extends MaxObject{
 		emu.nes.stopEmulation();
 	}
 
-	//restart game
+	// restart game
 	public void start(){
 		emu.nes.startEmulation();
 	}
@@ -151,7 +176,9 @@ public class VNESJitter extends MaxObject{
 		emu.destroy();
 	}
 
-
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 	private methods
+	/////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	private void loadRom(String file){
 		fileName = file;
